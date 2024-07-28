@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun Jul 28 13:57:52 2024
-#  Last Modified : <240728.1656>
+#  Last Modified : <240728.1941>
 #
 #  Description	
 #
@@ -72,7 +72,7 @@ def sleep(ms):
         execute(loop, ms)
 
 class TrikeCampingTravelBox(object):
-    __BoardThick = .75*25.4
+    __BoardThick = 1.0*25.4
     __BoxOuterWidth = 27.25*25.4
     __BoxOuterLength = 64*25.4
     __BoxOuterHeight = 24*25.4
@@ -120,6 +120,27 @@ class TrikeCampingTravelBox(object):
         self.right = self.right.cut(self.floor)
         self.right = self.right.cut(self.front)
         self.right = self.right.cut(self.back)
+        frontCenterOrig = origin.add(Base.Vector(self.__BoxOuterWidth/2,0,0))
+        hitchSpaceOrig = frontCenterOrig.add(Base.Vector(-(self.__HitchNotchWidth/2),0,0))
+        hitchSpace = Part.makePlane(self.__HitchNotchWidth,\
+                                    self.__HitchNotchLength,\
+                                    hitchSpaceOrig)\
+                    .extrude(Base.Vector(0,0,self.__HitchNotchHeight))
+        self.front = self.front.cut(hitchSpace)
+        self.floor = self.floor.cut(hitchSpace)
+        self.cornerNotch(origin)
+        self.cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,0,0)))
+        self.cornerNotch(origin.add(Base.Vector(0,self.__BoxOuterLength-self.__CornerLength,0)))
+        self.cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,\
+                                                self.__BoxOuterLength-self.__CornerLength,0)))
+    def cornerNotch(self,cornerOrig):
+        notch = Part.makePlane(self.__CornerWidth,self.__CornerLength,cornerOrig)\
+                .extrude(Base.Vector(0,0,self.__CornerHeight))
+        self.floor = self.floor.cut(notch)
+        self.front = self.front.cut(notch)
+        self.back = self.back.cut(notch)
+        self.left = self.left.cut(notch)
+        self.right = self.right.cut(notch)
     def show(self,doc=None):
         if doc==None:
             doc = App.activeDocument()
