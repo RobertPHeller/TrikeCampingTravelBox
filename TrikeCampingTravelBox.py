@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun Jul 28 13:57:52 2024
-#  Last Modified : <240728.1941>
+#  Last Modified : <240729.0755>
 #
 #  Description	
 #
@@ -76,6 +76,7 @@ class TrikeCampingTravelBox(object):
     __BoxOuterWidth = 27.25*25.4
     __BoxOuterLength = 64*25.4
     __BoxOuterHeight = 24*25.4
+    __LidOuterHeight = 2*25.4
     __CornerWidth = 1.25*25.4
     __CornerLength = (5.0/8.0)*25.4
     __CornerHeight = 2.5*25.4
@@ -133,6 +134,34 @@ class TrikeCampingTravelBox(object):
         self.cornerNotch(origin.add(Base.Vector(0,self.__BoxOuterLength-self.__CornerLength,0)))
         self.cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,\
                                                 self.__BoxOuterLength-self.__CornerLength,0)))
+        lidOrigin = origin.add(Base.Vector(0,0,self.__BoxOuterHeight))
+        frontLOrig = lidOrigin.add(Base.Vector(negRabbet,0,0))
+        self.lidfront = Part.makePlane(endWidth,self.__BoardThick,frontLOrig)\
+                    .extrude(Base.Vector(0,0,self.__LidOuterHeight))
+        backLOrig = lidOrigin.add(Base.Vector(negRabbet,\
+                                          self.__BoxOuterLength-self.__BoardThick,\
+                                          0))
+        self.lidback = Part.makePlane(endWidth,self.__BoardThick,backLOrig)\
+                    .extrude(Base.Vector(0,0,self.__LidOuterHeight))
+        self.lidleft = Part.makePlane(self.__BoardThick,self.__BoxOuterLength,\
+                                   lidOrigin)\
+                    .extrude(Base.Vector(0,0,self.__LidOuterHeight))
+        self.lidleft = self.lidleft.cut(self.lidfront)
+        self.lidleft = self.lidleft.cut(self.lidback)
+        rightLOrig = lidOrigin.add(Base.Vector(self.__BoxOuterWidth - self.__BoardThick,0,0))
+        self.lidright = Part.makePlane(self.__BoardThick,self.__BoxOuterLength,\
+                                   rightLOrig)\
+                    .extrude(Base.Vector(0,0,self.__LidOuterHeight))
+        self.lidright = self.lidright.cut(self.lidfront)
+        self.lidright = self.lidright.cut(self.lidback)
+        lidTOrigin = lidOrigin.add(Base.Vector(negRabbet,negRabbet,\
+                                    self.__LidOuterHeight-self.__FloorThick))
+        self.top = Part.makePlane(floorWidth,floorLength,lidTOrigin)\
+                    .extrude(Base.Vector(0,0,self.__FloorThick))
+        self.lidfront = self.lidfront.cut(self.top)
+        self.lidback = self.lidback.cut(self.top)
+        self.lidleft = self.lidleft.cut(self.top)
+        self.lidright = self.lidright.cut(self.top)
     def cornerNotch(self,cornerOrig):
         notch = Part.makePlane(self.__CornerWidth,self.__CornerLength,cornerOrig)\
                 .extrude(Base.Vector(0,0,self.__CornerHeight))
@@ -163,6 +192,26 @@ class TrikeCampingTravelBox(object):
         obj = doc.addObject("Part::Feature",self.name+"_right")
         obj.Shape=self.right
         obj.Label=self.name+"_right"
+        obj.ViewObject.ShapeColor=tuple([139/255,90/255,43/255])
+        obj = doc.addObject("Part::Feature",self.name+"_top")
+        obj.Shape=self.top
+        obj.Label=self.name+"_top"
+        obj.ViewObject.ShapeColor=tuple([210/255,180/255,140/255])
+        obj = doc.addObject("Part::Feature",self.name+"_lidfront")
+        obj.Shape=self.lidfront
+        obj.Label=self.name+"_lidfront"
+        obj.ViewObject.ShapeColor=tuple([139/255,90/255,43/255])
+        obj = doc.addObject("Part::Feature",self.name+"_lidback")
+        obj.Shape=self.lidback
+        obj.Label=self.name+"_lidback"
+        obj.ViewObject.ShapeColor=tuple([139/255,90/255,43/255])
+        obj = doc.addObject("Part::Feature",self.name+"_lidleft")
+        obj.Shape=self.lidleft
+        obj.Label=self.name+"_lidleft"
+        obj.ViewObject.ShapeColor=tuple([139/255,90/255,43/255])
+        obj = doc.addObject("Part::Feature",self.name+"_lidright")
+        obj.Shape=self.lidright
+        obj.Label=self.name+"_lidright"
         obj.ViewObject.ShapeColor=tuple([139/255,90/255,43/255])
         
 
