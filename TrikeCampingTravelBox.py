@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Sun Jul 28 13:57:52 2024
-#  Last Modified : <240729.0755>
+#  Last Modified : <240802.1000>
 #
 #  Description	
 #
@@ -71,6 +71,13 @@ def sleep(ms):
         loop = QEventLoop()
         execute(loop, ms)
 
+def real_greaterEQ(f1, f2):
+    x = f1-f2
+    if x > -.01:
+        return True
+    else:
+        return False
+
 class TrikeCampingTravelBox(object):
     __BoardThick = 1.0*25.4
     __BoxOuterWidth = 27.25*25.4
@@ -83,7 +90,7 @@ class TrikeCampingTravelBox(object):
     __HitchNotchWidth = (27.24-22.5)*25.4
     __HitchNotchLength = .75*25.4
     __HitchNotchHeight = 3*25.4
-    __BoardWidth = 8**25.4
+    __BoardWidth = 8*25.4
     __FloorThick = .5*25.4
     __Rabbet = .5*25.4
     def __init__(self,name,origin):
@@ -91,6 +98,7 @@ class TrikeCampingTravelBox(object):
         if not isinstance(origin,Base.Vector):
             raise RuntimeError("origin is not a Vector!")
         self.origin = origin
+        self.boards = dict()
         negRabbet = self.__BoardThick - self.__Rabbet
         floorWidth = self.__BoxOuterWidth - 2*negRabbet
         floorLength = self.__BoxOuterLength - 2*negRabbet
@@ -102,18 +110,21 @@ class TrikeCampingTravelBox(object):
         self.front = Part.makePlane(endWidth,self.__BoardThick,frontOrig)\
                     .extrude(Base.Vector(0,0,self.__BoxOuterHeight))
         self.front = self.front.cut(self.floor)
+        self.__AddBoards(self.__BoxOuterHeight,endWidth)
         backOrig = origin.add(Base.Vector(negRabbet,\
                                           self.__BoxOuterLength-self.__BoardThick,\
                                           0))
         self.back = Part.makePlane(endWidth,self.__BoardThick,backOrig)\
                     .extrude(Base.Vector(0,0,self.__BoxOuterHeight))
         self.back = self.back.cut(self.floor)  
+        self.__AddBoards(self.__BoxOuterHeight,endWidth)
         self.left = Part.makePlane(self.__BoardThick,self.__BoxOuterLength,\
                                    origin)\
                     .extrude(Base.Vector(0,0,self.__BoxOuterHeight))
         self.left = self.left.cut(self.floor)
         self.left = self.left.cut(self.front)
         self.left = self.left.cut(self.back)
+        self.__AddBoards(self.__BoxOuterHeight,self.__BoxOuterLength)
         rightOrig = origin.add(Base.Vector(self.__BoxOuterWidth - self.__BoardThick,0,0))
         self.right = Part.makePlane(self.__BoardThick,self.__BoxOuterLength,\
                                    rightOrig)\
@@ -121,6 +132,7 @@ class TrikeCampingTravelBox(object):
         self.right = self.right.cut(self.floor)
         self.right = self.right.cut(self.front)
         self.right = self.right.cut(self.back)
+        self.__AddBoards(self.__BoxOuterHeight,self.__BoxOuterLength)
         frontCenterOrig = origin.add(Base.Vector(self.__BoxOuterWidth/2,0,0))
         hitchSpaceOrig = frontCenterOrig.add(Base.Vector(-(self.__HitchNotchWidth/2),0,0))
         hitchSpace = Part.makePlane(self.__HitchNotchWidth,\
@@ -129,31 +141,35 @@ class TrikeCampingTravelBox(object):
                     .extrude(Base.Vector(0,0,self.__HitchNotchHeight))
         self.front = self.front.cut(hitchSpace)
         self.floor = self.floor.cut(hitchSpace)
-        self.cornerNotch(origin)
-        self.cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,0,0)))
-        self.cornerNotch(origin.add(Base.Vector(0,self.__BoxOuterLength-self.__CornerLength,0)))
-        self.cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,\
+        self.__cornerNotch(origin)
+        self.__cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,0,0)))
+        self.__cornerNotch(origin.add(Base.Vector(0,self.__BoxOuterLength-self.__CornerLength,0)))
+        self.__cornerNotch(origin.add(Base.Vector(self.__BoxOuterWidth-self.__CornerWidth,\
                                                 self.__BoxOuterLength-self.__CornerLength,0)))
         lidOrigin = origin.add(Base.Vector(0,0,self.__BoxOuterHeight))
         frontLOrig = lidOrigin.add(Base.Vector(negRabbet,0,0))
         self.lidfront = Part.makePlane(endWidth,self.__BoardThick,frontLOrig)\
                     .extrude(Base.Vector(0,0,self.__LidOuterHeight))
+        self.__AddBoards(self.__LidOuterHeight,endWidth)
         backLOrig = lidOrigin.add(Base.Vector(negRabbet,\
                                           self.__BoxOuterLength-self.__BoardThick,\
                                           0))
         self.lidback = Part.makePlane(endWidth,self.__BoardThick,backLOrig)\
                     .extrude(Base.Vector(0,0,self.__LidOuterHeight))
+        self.__AddBoards(self.__LidOuterHeight,endWidth)
         self.lidleft = Part.makePlane(self.__BoardThick,self.__BoxOuterLength,\
                                    lidOrigin)\
                     .extrude(Base.Vector(0,0,self.__LidOuterHeight))
         self.lidleft = self.lidleft.cut(self.lidfront)
         self.lidleft = self.lidleft.cut(self.lidback)
+        self.__AddBoards(self.__LidOuterHeight,self.__BoxOuterLength)
         rightLOrig = lidOrigin.add(Base.Vector(self.__BoxOuterWidth - self.__BoardThick,0,0))
         self.lidright = Part.makePlane(self.__BoardThick,self.__BoxOuterLength,\
                                    rightLOrig)\
                     .extrude(Base.Vector(0,0,self.__LidOuterHeight))
         self.lidright = self.lidright.cut(self.lidfront)
         self.lidright = self.lidright.cut(self.lidback)
+        self.__AddBoards(self.__LidOuterHeight,self.__BoxOuterLength)
         lidTOrigin = lidOrigin.add(Base.Vector(negRabbet,negRabbet,\
                                     self.__LidOuterHeight-self.__FloorThick))
         self.top = Part.makePlane(floorWidth,floorLength,lidTOrigin)\
@@ -162,7 +178,7 @@ class TrikeCampingTravelBox(object):
         self.lidback = self.lidback.cut(self.top)
         self.lidleft = self.lidleft.cut(self.top)
         self.lidright = self.lidright.cut(self.top)
-    def cornerNotch(self,cornerOrig):
+    def __cornerNotch(self,cornerOrig):
         notch = Part.makePlane(self.__CornerWidth,self.__CornerLength,cornerOrig)\
                 .extrude(Base.Vector(0,0,self.__CornerHeight))
         self.floor = self.floor.cut(notch)
@@ -170,6 +186,26 @@ class TrikeCampingTravelBox(object):
         self.back = self.back.cut(notch)
         self.left = self.left.cut(notch)
         self.right = self.right.cut(notch)
+    def __AddBoards(self,width,length):
+        while real_greaterEQ(width,self.__BoardWidth):
+            print ("*** TrikeCampingTravelBox.__AddBoards() [in loop]: width = %6.2f" % width, file=sys.stderr)
+            if (self.__BoardWidth,length) in self.boards:
+                self.boards[(self.__BoardWidth,length)] += 1
+            else:
+                self.boards[(self.__BoardWidth,length)] = 1
+            width -= self.__BoardWidth
+        print ("*** TrikeCampingTravelBox.__AddBoards() [after loop]: width = %6.2f" % width, file=sys.stderr)
+        if width > 0:
+            if (width,length) in self.boards:
+                self.boards[(width,length)] += 1
+            else:
+                self.boards[(width,length)] = 1
+    def BoardList(self,file):
+        f = open(file,"w")
+        for size in sorted(self.boards):
+            w,h = size
+            print("%6.2f x %6.2f : %d" % (w/25.4,h/25.4,self.boards[size]),file=f)
+        f.close()
     def show(self,doc=None):
         if doc==None:
             doc = App.activeDocument()
@@ -223,5 +259,6 @@ if __name__ == '__main__':
     doc = App.activeDocument()
     box = TrikeCampingTravelBox("box",Base.Vector(0,0,0))
     box.show()
+    box.BoardList("TrikeCampingTravelBox.bom")
     Gui.SendMsgToActiveView("ViewFit")
     Gui.activeDocument().activeView().viewTop()
